@@ -71,17 +71,13 @@ class Heatmap extends Component {
         const { dataset, baseValue } = this.props;
 
         const opts = {
-            width: 500,
-            height: 200,
+            width: 1000,
+            height: 600,
             margin: {
                 top: 50,
                 right: 0,
                 bottom: 100,
                 left: 30
-            },
-            rect: {
-                width: 10,
-                height: 40,
             }
         }
         
@@ -108,6 +104,19 @@ class Heatmap extends Component {
                             .domain([d3.min(dataset  , (d) => d.variance) , d3.max(dataset  , (d) => d.variance )])
                             .rangeRound([0,255]);
 
+        const xAxis = d3.axisBottom(xScale);
+
+        const yAxis = d3.axisLeft(yScale);
+
+        /* const tip =  d3.tip()
+                    .attr('class', 'd3-tip')
+                    .html( (d) =>  {
+                        return `<strong>Variance:</strong> <span style='color:red'>${baseValue - d.variance}</span>`;
+                    }); */
+
+        /* const tip = d3.tip().attr('class', 'd3-tip').html(function(d) { return d; }); */
+
+
         svg.selectAll("rect")
         .data(dataset)
         .enter()
@@ -119,18 +128,28 @@ class Heatmap extends Component {
             return yScale(d.month);
         })
         .attr("height", (d) => {
-            return opts.rect.height;
+            return ( (opts.height - opts.margin.top - opts.margin.bottom) / 12 );
         })
         .attr("width", (d) => {
-            return opts.rect.width;
+            return ( (opts.width - opts.margin.left - opts.margin.right) / (dataset.length / 12) );
         })
         .attr("stroke", (d) => {
-            return `rgba(${colorScale(d.variance)},80,80, 0.9)`;
+            return `rgba(${colorScale(d.variance)},75,${255 - colorScale(d.variance)}, 1)`;
         })
         .attr("stroke-width", 1)
         .attr("fill", (d) => {
-            return `rgba(${colorScale(d.variance)},80,80, 0.5)`;
+            return `rgba(${colorScale(d.variance)},100,${255 - colorScale(d.variance)}, 0.75)`;
         })
+        /* .on('mouseover', tip.show)
+        .on('mouseout', tip.hide) */
+
+        svg.append("g")
+        .attr("transform", `translate(0, ${opts.height - opts.margin.top})`)
+        .call(xAxis);
+
+        svg.append("g")
+        .attr("transform", `translate(0 , 0)`)
+        .call(yAxis);
     }
     
     render() {
