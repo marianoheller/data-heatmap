@@ -180,7 +180,7 @@ class Heatmap extends Component {
         .text( (m) => {
             return m.split("").filter( (e,i) => i < 3).join("") + ".";
         });
-
+/* 
         svg.append("g")
         .selectAll("rect")
         .data(opts.colors.range)
@@ -188,15 +188,43 @@ class Heatmap extends Component {
         .append("rect")
         .attr("fill", (d) => d)
         .attr("x", (d,i) => {
-            return opts.width - opts.margin.left -  (i+1)*40;
+            return opts.width - opts.margin.left -   (i+1)*40;
         } )
         .attr("y", (d,i) => {
             return opts.height - 20;
         })
         .attr("width", 50)
         .attr("height", 50)
+ */
 
-        
+        const legend = svg.append("defs")
+        .append("svg:linearGradient")
+        .attr("id", "gradient")
+        .attr("x1", "0%")
+        .attr("y1", "0%")
+        .attr("x2", "100%")
+        .attr("y2", "0%")
+        .attr("spreadMethod", "pad");
+
+        legend.selectAll("stop")
+        .data(opts.colors.range)
+        .enter()
+        .append("stop")
+        .attr("offset", (d,i) => {
+            const cantColors = opts.colors.range.length;
+            const step = Math.round(100*100/cantColors)/100;
+            return `${step*(i+1)}%`
+        })
+        .attr("stop-color", (d) => d)
+        .attr("stop-opacity", 1);
+
+        svg.append("rect")
+        .attr("width", 200)
+        .attr("height", 200)
+        .attr("x", opts.width - opts.margin.left )
+        .attr("y", opts.height - 20)
+        .style("fill", "url(#gradient)");
+
     }
     
     render() {
