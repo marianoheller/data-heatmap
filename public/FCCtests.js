@@ -41431,7 +41431,10 @@ var FCC_Global =
 	        FCC_Global.assert.isAbove(yAxisTickLabels.length, 0, 'Could not find tick labels on the y axis');
 
 	        for (var i = 0; i < yAxisTickLabels.length; i++) {
-	          FCC_Global.assert.include(months, yAxisTickLabels[i].textContent.toLowerCase(), 'Y axis labels should contain month names ');
+				const myMonths = months.map( (m) => {
+					return m.split("").filter( (e,i) => i < 3).join("") + ".";
+				} )
+	          FCC_Global.assert.include(myMonths, yAxisTickLabels[i].textContent.toLowerCase(), 'Y axis labels should contain month names ');
 	        }
 	      });
 

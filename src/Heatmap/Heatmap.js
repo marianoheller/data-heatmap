@@ -212,6 +212,7 @@ class Heatmap extends Component {
             return heightSquare*(i) + heightSquare/2;   
         })
         .attr("transform", `translate(${-4}, 0)`)
+        .attr("class", "tick")
         .text( (m) => {
             return m.split("").filter( (e,i) => i < 3).join("") + ".";
         });
@@ -264,7 +265,7 @@ class Heatmap extends Component {
         .attr("y", yLengend)
         .attr("stroke", "black")
         .attr("stroke-width", 1)
-        .style("fill", "url(#gradient)");
+        .style("fill", "url(#legend)");
 
         svg.append("g")
         .attr("transform", `translate(${xLengend}, ${yLengend + opts.legend.height})`)
