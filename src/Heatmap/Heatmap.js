@@ -74,10 +74,10 @@ class Heatmap extends Component {
             width: 1000,
             height: 500,
             margin: {
-                top: 50,
+                top: 70,
                 right: 0,
-                bottom: 50,
-                left: 50
+                bottom: 80,
+                left: 80
             },
             colors: {
                 domain: [
@@ -87,6 +87,10 @@ class Heatmap extends Component {
                 ],
                 range: ["#0000CC", "#f7ff89", "#ba0000"],
             },
+            legend: {
+                width: 300,
+                height: 15
+            }
         }
         
         const svg = d3.select("#heatmapContainer")
@@ -116,10 +120,11 @@ class Heatmap extends Component {
 
         const xAxis =   d3.axisBottom(xScale).tickArguments([d3.timeYear.every(10)]);
 
-        const yAxis = d3.axisLeft(yScale);
-
+        //TOOLTIP
         const tip =  d3tip()
                     .attr('class', 'd3-tip')
+                    .attr("id", "tooltip")
+                    .attr("data-year", (d) => 1234 )
                     .html( (d) =>  {
                         return `
                         <strong>Year:</strong> ${d.year}<br>
@@ -130,18 +135,31 @@ class Heatmap extends Component {
                     }); 
         svg.call(tip);
 
+        //TITLE
         svg.append("text")
-        .attr("x", (opts.width / 2))             
+        .attr("x", (opts.width - opts.margin.left)/2 )             
         .attr("y", 0 - (opts.margin.top / 2))
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .style("text-decoration", "underline")  
+        .attr("text-anchor", "middle")
+        .attr("id", "title")
         .text("Monthly Global Land-Surface Temperature");
 
+        //Description
+        svg.append("text")
+        .attr("x", (opts.width - opts.margin.left)/2 )
+        .attr("y", -opts.margin.top/6 )
+        .attr("text-anchor", "middle")
+        .attr("id", "description")
+        .text("1753 - 2015");
+
+        //DATA
         svg.selectAll("rect")
         .data(dataset)
         .enter()
         .append("rect")
+        .attr("class", "cell")
+        .attr("data-month", (d) => d.month - 1)
+        .attr("data-year", (d) => d.year)
+        .attr("data-temp", (d) => baseValue + d.variance )
         .attr("x", (d) => {
             return xScale( new Date(d.year, d.month-1));
         })
@@ -160,11 +178,28 @@ class Heatmap extends Component {
         .on('mouseover', tip.show)
         .on('mouseout', tip.hide);
 
+        //X AXIS
         svg.append("g")
+        .attr("id", "x-axis")
         .attr("transform", `translate(0, ${opts.height - opts.margin.top - opts.margin.bottom})`)
         .call(xAxis);
 
+        //X AXIS NAME
+        svg.append("text")
+        .text("Years")
+        .attr("class", "axis-name")
+        .attr("text-anchor", "middle")
+        .attr(
+            "transform", 
+            `translate(${(
+                opts.width - opts.margin.left)/2}, 
+                ${opts.height - opts.margin.top - opts.margin.bottom/2}
+            )`
+        );
+
+        //Y AXIS
         svg.append("g")
+        .attr("id", "y-axis")
         .selectAll("text")
         .data(months)
         .enter()
@@ -180,50 +215,60 @@ class Heatmap extends Component {
         .text( (m) => {
             return m.split("").filter( (e,i) => i < 3).join("") + ".";
         });
-/* 
-        svg.append("g")
-        .selectAll("rect")
-        .data(opts.colors.range)
-        .enter()
-        .append("rect")
-        .attr("fill", (d) => d)
-        .attr("x", (d,i) => {
-            return opts.width - opts.margin.left -   (i+1)*40;
-        } )
-        .attr("y", (d,i) => {
-            return opts.height - 20;
-        })
-        .attr("width", 50)
-        .attr("height", 50)
- */
 
-        const legend = svg.append("defs")
-        .append("svg:linearGradient")
-        .attr("id", "gradient")
+        //Y AXIS NAME
+        svg.append("text")
+        .text("Months")
+        .attr("class", "axis-name")
+        .attr("text-anchor", "middle")
+        .attr(
+            "transform", 
+            `translate(${(-1)*opts.margin.left/2}, ${opts.height/2 - opts.margin.top})rotate(-90)`
+        )
+
+        //LEGEND
+        const legendDef = svg.append("defs")
+        .append("linearGradient")
+        .attr("id", "legend")
         .attr("x1", "0%")
         .attr("y1", "0%")
         .attr("x2", "100%")
         .attr("y2", "0%")
         .attr("spreadMethod", "pad");
 
-        legend.selectAll("stop")
+        legendDef.selectAll("stop")
         .data(opts.colors.range)
         .enter()
         .append("stop")
         .attr("offset", (d,i) => {
             const cantColors = opts.colors.range.length;
-            const step = Math.round(100*100/cantColors)/100;
-            return `${step*(i+1)}%`
+            const step = Math.round(100*100/ (cantColors-1))/100;
+            return `${Math.round( step*(i) )}%`
         })
         .attr("stop-color", (d) => d)
         .attr("stop-opacity", 1);
 
+        const legendScale = d3.scaleLinear()
+                .domain( [  baseValue + d3.min(dataset  , (d) => d.variance) , 
+                            baseValue + d3.max(dataset  , (d) => d.variance) ] )
+                .range( [0, opts.legend.width ]);
+        const legendAxis = d3.axisBottom(legendScale).tickFormat(d => d + "°C").ticks(4);
+
+        const xLengend = opts.width - opts.legend.width - opts.margin.left;
+        const yLengend= opts.height - opts.legend.height - opts.margin.bottom;
+
         svg.append("rect")
-        .attr("width", 200)
-        .attr("height", 200)
-        .attr("x", opts.width - opts.margin.left )
-        .attr("y", opts.height - 20)
+        .attr("width", opts.legend.width)
+        .attr("height", opts.legend.height)
+        .attr("x", xLengend )
+        .attr("y", yLengend)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
         .style("fill", "url(#gradient)");
+
+        svg.append("g")
+        .attr("transform", `translate(${xLengend}, ${yLengend + opts.legend.height})`)
+        .call(legendAxis)
 
     }
     

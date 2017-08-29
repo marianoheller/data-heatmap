@@ -7,7 +7,7 @@ body {
 }
 
 .App {
-  margin-top: 80px;
+  padding-top: 50px;
   text-align: center;
   background-color: rgba(255,255,255,0.75);
 }

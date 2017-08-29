@@ -30,4 +30,16 @@
 
 .axis-label {
   font-size: small;
+  font-family: 'Roboto', sans-serif;
+}
+
+.axis-name {
+  font-weight: bold;
+  font-family: 'Roboto', sans-serif;
+}
+
+#title {
+  font-size: 2em;
+  font-weight: bold;
+  font-family: 'Roboto', sans-serif;
 }
