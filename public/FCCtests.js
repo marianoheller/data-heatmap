@@ -21917,9 +21917,9 @@ var FCC_Global =
 	function isAxisAlignedWithDataPoints(axis, collection, getMisalignmentCountFunc, getFeatureValueFunc, getTickValueFunc) {
 	  var count = 0;
 	  for (var i = 0; i < axis.ticks.length - 1; i++) {
-	    count += getMisalignmentCountFunc(axis, collection, getFeatureValueFunc, getTickValueFunc, i);
+		count += getMisalignmentCountFunc(axis, collection, getFeatureValueFunc, getTickValueFunc, i);
 	  }
-
+	  console.log(`x-ticks: ${axis.ticks.length}`, `x-misalignment: ${count}`);
 	  return count === 0;
 	}
 
