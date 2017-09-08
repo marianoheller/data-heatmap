@@ -96,29 +96,27 @@ class Heatmap extends Component {
         const svg = d3.select("#heatmapContainer")
                     .append("svg")
                     .attr("width", opts.width + opts.margin.right + opts.margin.left)
-                    .attr("height", opts.height + opts.margin.top + opts.margin.bottom)
-                    .append("g")
-                    .attr("transform", `translate(${opts.margin.left},${opts.margin.top})`);
+                    .attr("height", opts.height + opts.margin.top + opts.margin.bottom);
 
-        const heightSquare = ( (opts.height - opts.margin.top - opts.margin.bottom) / 12 );
-        const widthSquare = ( (opts.width - opts.margin.left - opts.margin.right) / (dataset.length / 12) );
+        const heightSquare = ( opts.height / 12 );
+        const widthSquare = ( opts.width / (dataset.length / 12) );
 
+        //SCALES
         const xScale =  d3.scaleTime()
                         .domain([
                             new Date(d3.min(dataset  , (d) => d.year), 0 ) , 
-                            new Date(d3.max(dataset  , (d) => d.year)+1, 11 )
+                            new Date(d3.max(dataset  , (d) => d.year), 11)
                         ])
-                        .range([0, (opts.width - opts.margin.left - opts.margin.right)-widthSquare]);
+                        .range([0, opts.width]);
 
         const yScale =  d3.scaleLinear()
                         .domain([d3.min(dataset  , (d) => d.month) , d3.max(dataset  , (d) => d.month )])
-                        .range([0,(opts.height - opts.margin.top - opts.margin.bottom)- heightSquare])
+                        //.range([0,(opts.height - opts.margin.top - opts.margin.bottom)- heightSquare])
+                        .range([0,(opts.height)- heightSquare])
 
         const colorScale =  d3.scaleLinear()
                             .domain( opts.colors.domain )
                             .range( opts.colors.range );
-
-        const xAxis =   d3.axisBottom(xScale).tickArguments([d3.timeYear.every(10)]);
 
         //TOOLTIP
         const tip =  d3tip()
@@ -136,23 +134,27 @@ class Heatmap extends Component {
         svg.call(tip);
 
         //TITLE
-        svg.append("text")
-        .attr("x", (opts.width - opts.margin.left)/2 )             
-        .attr("y", 0 - (opts.margin.top / 2))
+        svg.append("g")
+        .append("text")
         .attr("text-anchor", "middle")
         .attr("id", "title")
+        .attr("x", (opts.width/2) )
+        .attr("y", opts.margin.top/2)
         .text("Monthly Global Land-Surface Temperature");
 
         //Description
-        svg.append("text")
-        .attr("x", (opts.width - opts.margin.left)/2 )
-        .attr("y", -opts.margin.top/6 )
+        svg.append("g")
+        .append("text")
+        .attr("x", (opts.width)/2 )
+        .attr("y", 5*opts.margin.top/6 )
         .attr("text-anchor", "middle")
         .attr("id", "description")
         .text("1753 - 2015");
 
         //DATA
-        svg.selectAll("rect")
+        svg.append("g")
+        .attr("transform", `translate(${opts.margin.left},${opts.margin.top})`)
+        .selectAll("rect")
         .data(dataset)
         .enter()
         .append("rect")
@@ -161,28 +163,29 @@ class Heatmap extends Component {
         .attr("data-year", (d) => d.year)
         .attr("data-temp", (d) => baseValue + d.variance )
         .attr("x", (d) => {
-            return xScale( new Date(d.year, d.month-1));
+            return xScale( new Date(d.year, 0));
         })
         .attr("y", (d) => {
             return yScale(d.month);
         })
-        .attr("height", (d) => {
-            return heightSquare;
-        })
-        .attr("width", (d) => {
-            return widthSquare;
-        })
+        .attr("height", heightSquare)
+        .attr("width", widthSquare)
         .attr("stroke", (d) => colorScale( baseValue + d.variance ))
         .attr("stroke-width", 1)
         .attr("fill", (d) => colorScale( baseValue + d.variance ))
-        .on('mouseover', tip.show)
+        .on('mouseover', (d,i) => {
+            tip.attr("data-year", d.year)
+            tip.show(d,i);
+        })
         .on('mouseout', tip.hide);
 
         //X AXIS
         svg.append("g")
         .attr("id", "x-axis")
-        .attr("transform", `translate(0, ${opts.height - opts.margin.top - opts.margin.bottom})`)
-        .call(xAxis);
+        .attr("transform", `translate(${opts.margin.left}, ${opts.height + opts.margin.top})`)
+        .call( d3.axisBottom(xScale)
+            .tickArguments([d3.timeYear.every(10)]) 
+        );
 
         //X AXIS NAME
         svg.append("text")
@@ -191,31 +194,29 @@ class Heatmap extends Component {
         .attr("text-anchor", "middle")
         .attr(
             "transform", 
-            `translate(${(
-                opts.width - opts.margin.left)/2}, 
-                ${opts.height - opts.margin.top - opts.margin.bottom/2}
+            `translate(
+                ${(opts.width/2 + opts.margin.left)}, 
+                ${opts.height + opts.margin.top + opts.margin.bottom/2}
             )`
         );
 
         //Y AXIS
-        svg.append("g")
+        const monthNameParser = (m) => {
+            const month = months[m-1];
+            return month.split("").filter( (e,i) => i < 3).join("") + ".";
+        };
+        const yAxis = svg.append("g")
         .attr("id", "y-axis")
-        .selectAll("text")
-        .data(months)
-        .enter()
-        .append("text")
-        .style("text-anchor", "end")
-        .attr("class", "axis-label")
-        .attr("x", 0)
-        .attr("y", (d, i) => {
-            const heightSquare = ( (opts.height - opts.margin.top - opts.margin.bottom ) / 12 );
-            return heightSquare*(i) + heightSquare/2;   
-        })
-        .attr("transform", `translate(${-4}, 0)`)
-        .attr("class", "tick")
-        .text( (m) => {
-            return m.split("").filter( (e,i) => i < 3).join("") + ".";
-        });
+        .attr("transform", `translate(${opts.margin.left}, ${opts.margin.top + heightSquare/2})`)
+        .call( d3.axisLeft(yScale)
+            .tickFormat(monthNameParser)
+        );
+        yAxis.selectAll(".domain")
+        .attr("stroke", "rgba(0,0,0,0)");
+        yAxis.selectAll("g > line")
+        .attr("stroke", "rgba(0,0,0,0)");
+        
+
 
         //Y AXIS NAME
         svg.append("text")
@@ -224,7 +225,7 @@ class Heatmap extends Component {
         .attr("text-anchor", "middle")
         .attr(
             "transform", 
-            `translate(${(-1)*opts.margin.left/2}, ${opts.height/2 - opts.margin.top})rotate(-90)`
+            `translate(${opts.margin.left/2}, ${opts.height/2 + opts.margin.top})rotate(-90)`
         )
 
         //LEGEND
@@ -255,8 +256,8 @@ class Heatmap extends Component {
                 .range( [0, opts.legend.width ]);
         const legendAxis = d3.axisBottom(legendScale).tickFormat(d => d + "°C").ticks(4);
 
-        const xLengend = opts.width - opts.legend.width - opts.margin.left;
-        const yLengend= opts.height - opts.legend.height - opts.margin.bottom;
+        const xLengend = opts.width - opts.legend.width;
+        const yLengend= opts.height + opts.margin.top + opts.margin.bottom/2;
 
         svg.append("rect")
         .attr("width", opts.legend.width)
